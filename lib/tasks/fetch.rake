@@ -32,7 +32,15 @@ namespace :fetch do
   task :info => :environment do
     GemData.where("spec = 'null'").find_each do |gem|
       puts gem.name
-      spec = Gems.info gem.name
+      delay = 1
+      begin
+        spec = Gems.info gem.name
+      rescue => e
+        puts "#{e} ... Retrying in #{delay}"
+        sleep delay
+        delay *= 2 unless delay > 5.minutes
+        retry
+      end
       gem.update spec: spec
     end
   end
