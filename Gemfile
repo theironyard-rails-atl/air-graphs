@@ -12,6 +12,8 @@ gem 'jbuilder', '~> 2.0'
 
 gem 'gems'
 
+gem 'active_node'
+
 group :development do
   gem 'pry-rails'
   gem 'spring'
