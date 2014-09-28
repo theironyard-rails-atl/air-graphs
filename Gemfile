@@ -15,6 +15,7 @@ gem 'gems'
 gem 'active_node'
 
 group :development do
+  gem 'faker'
   gem 'pry-rails'
   gem 'spring'
 end

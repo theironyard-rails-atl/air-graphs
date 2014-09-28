@@ -11,19 +11,25 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20140927171710) do
+ActiveRecord::Schema.define(version: 20140928221340) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
+  create_table "friendships", force: true do |t|
+    t.integer "from_id"
+    t.integer "to_id"
+  end
+
   create_table "gem_data", force: true do |t|
-    t.string   "name"
-    t.text     "spec"
-    t.datetime "created_at"
-    t.datetime "updated_at"
-    t.boolean  "fetched",      default: false, null: false
-    t.string   "version"
-    t.text     "dependencies"
+    t.string "name"
+    t.text   "spec"
+    t.string "version"
+  end
+
+  create_table "users", force: true do |t|
+    t.string  "name"
+    t.integer "node_id"
   end
 
 end
