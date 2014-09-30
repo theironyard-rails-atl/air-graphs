@@ -1,30 +1,30 @@
 namespace :users do
   desc 'Generate a random social network'
   task :generate do
+    # Generate a small-world graph using the Watts-Strogatz model
     user_count       = n = 250
     avg_friend_count = k = 4
     rewire_prob      = b = 0.1
 
     # Clear pre-existing links
     [User::Record, Friendship].each &:delete_all
+
+    # Create enough user nodes
     n.times { User::Record.create! name: Faker::Name.name }
 
     puts "Generating a uniform friend lattice"
     graph, popularity = {}, {}
     ids = User::Record.pluck :id
     ids.each_with_index do |id, index|
-      adjs = Set.new
+      graph[id] = Set.new
+      popularity[id] = 0
 
       (-k/2).upto(k/2) do |i|
-        next if i == 0
-        adjs.add ids[(index + i) % n]
+        graph[id].add ids[(index + i) % n] unless i.zero?
       end
-
-      graph[id] = adjs
-      popularity[id] = 0
     end
 
-    puts "Rewiring edges"
+    puts 'Rewiring edges'
     graph.each do |node, neighbors|
       available = Set.new(ids) - neighbors
       available.delete node
@@ -36,8 +36,8 @@ namespace :users do
 
           replacement = available.to_a.sample
 
-          neighbors.add replacement
           available.delete replacement
+          neighbors.add replacement
         end
       end
     end

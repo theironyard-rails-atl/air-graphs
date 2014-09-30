@@ -1,4 +1,4 @@
-require 'neography'
+require 'bulk_processor'
 
 namespace :gems do
   Width = `tput cols`.to_i
@@ -46,50 +46,41 @@ namespace :gems do
   end
 
 
+
   desc 'Populate Neo4j graph from saved gem specs'
   task :graph => :environment do
-    raise "There are unspec'd gems" if GemData.where("spec = 'null'").exists?
-
-    neo = ActiveNode::Neo.db
 
     puts 'Cleaning up existing nodes'
     %w( Gem Author ).each do |label|
-       neo.execute_query "MATCH (n:#{label})-[r]-() DELETE n,r"
+       $neo.execute_query "MATCH (n:#{label})-[r]-() DELETE n,r"
     end
 
     puts 'Building indexes'
-    neo.execute_query "CREATE INDEX ON :Gem(name)"
-    neo.execute_query "CREATE INDEX ON :Author(name)"
+    $neo.execute_query "CREATE INDEX ON :Gem(name)"
+    $neo.execute_query "CREATE INDEX ON :Author(name)"
 
-    scope = GemData.find_each
-    count = scope.count
-
-    batch = []
+    batched = BulkProcessor.new batch_size: 1000
 
     puts 'Populating graph nodes'
-    scope.each_with_index do |g,i|
+    scope = GemData.find_each
+    count = scope.count
+    scope.with_index do |g,i|
       print "\r#{progress i, count}"
 
       s = g.spec
 
-      batch.push [ :execute_query,
-        "MERGE (a:Gem {name:{name}})", { name: g.name } ]
+      batched.execute_query "MERGE (a:Gem {name:{name}})", name: g.name
       g.spec['authors'].split(',').each do |auth|
-        batch.push [ :execute_query,
-          "MERGE (a:Author {name:{name}})", { name: auth } ]
-      end
-
-      if batch.length > 100
-        neo.batch *batch
-        batch.clear
+        batched.execute_query(
+          "MERGE (a:Author {name:{name}})", name: auth)
       end
     end
 
-    neo.batch(*batch) if batch.any?
+    batched.flush!
 
 
     puts 'Building relations'
-    scope.each_with_index do |g,i|
+    scope.with_index do |g,i|
       print "\r#{progress i, count}"
 
       spec  = g.spec
@@ -97,34 +88,28 @@ namespace :gems do
       deps  = spec.delete 'dependencies'
 
       deps['runtime'].each do |dep|
-        batch.push [ :execute_query,
+        batched.execute_query(
           "MATCH (a:Gem {name:{name}}), (b:Gem {name:{dep_name}})
            MERGE (a)-[:depends]->(b)",
-          { name: g.name, dep_name: dep['name'] } ]
+          name: g.name, dep_name: dep['name'] )
       end
 
       deps['development'].each do |dep|
-        batch.push [ :execute_query,
+        batched.execute_query(
           "MATCH (a:Gem {name:{name}}), (b:Gem {name:{dep_name}})
            MERGE (a)-[:dev_depends]->(b)",
-          { name: g.name, dep_name: dep['name'] } ]
+          name: g.name, dep_name: dep['name'] )
       end
 
       auths.split(',').each do |auth|
-        batch.push [ :execute_query,
+        batched.execute_query(
           "MATCH (a:Author {name:{auth}}), (b:Gem {name:{gem}})
            MERGE (a)-[:wrote]->(b)",
-          { auth: auth, gem: g.name } ]
-      end
-
-      if batch.length > 100
-        neo.batch *batch
-        batch.clear
+          auth: auth, gem: g.name)
       end
     end
 
-    # Flush the last batch
-    neo.batch(*batch) if batch.any?
+    batched.flush!
   end
 
 end

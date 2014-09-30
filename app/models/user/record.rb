@@ -1,6 +1,9 @@
 class User::Record < ActiveRecord::Base
   self.table_name = :users
 
+
+  # -- Utility functions ----
+
   def get_records query
     self.class.joins(query.squish).uniq.to_a
   end
@@ -15,6 +18,9 @@ class User::Record < ActiveRecord::Base
 
     @_node ||= User::Node.find node_id
   end
+
+
+  # -- Friend methods ----
 
   def friends
     get_records %{
