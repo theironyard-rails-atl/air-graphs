@@ -34,7 +34,7 @@ class User::Node < ActiveNode::Base
   def friends_in_common_with other
     get_nodes %{
       START self=node({id}), o=node({other_id})
-      MATCH (self)--(a)--(other_id)
+      MATCH (self)--(a)--(o)
       RETURN DISTINCT a
     }, id: id, other_id: other.id
   end
