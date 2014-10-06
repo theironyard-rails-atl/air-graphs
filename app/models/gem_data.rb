@@ -1,6 +1,9 @@
 class GemData < ActiveRecord::Base
   serialize :spec, JSON
 
+  has_many :author_gem_data
+  has_many :authors, through: :author_gem_data
+
   # Neo4J queries -----
 
   def self.node_names query, opts

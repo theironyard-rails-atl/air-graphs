@@ -22,20 +22,20 @@ class GemData
       collection.find('spec.authors_list' => name).to_a
     end
 
-    def most_downloaded cutoff: 10_000, limit: 20
-      collection.
-        find('spec.downloads' => { '$gt' => cutoff }).
-        limit(limit).
-        sort('spec.downloads' => :desc).
-        to_a
-    end
-
     def with_dependency gem
       # { '$or' => [
       #   { 'spec.dependencies.development.name' => gem },
       #   { 'spec.dependencies.runtime' => gem }
       # ] }
       collection.find('spec.dependencies.runtime.name' => gem).to_a
+    end
+
+    def most_downloaded cutoff: 10_000, limit: 20
+      collection.
+        find('spec.downloads' => { '$gt' => cutoff }).
+        limit(limit).
+        sort('spec.downloads' => :desc).
+        to_a
     end
   end
 end
