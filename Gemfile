@@ -14,6 +14,9 @@ gem 'gems'
 
 gem 'active_node'
 
+gem 'bson_ext'
+gem 'mongo'
+
 group :development do
   gem 'faker'
   gem 'pry-rails'

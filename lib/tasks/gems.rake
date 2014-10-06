@@ -112,4 +112,29 @@ namespace :gems do
     batched.flush!
   end
 
+
+  desc 'Export gem data to mongo'
+  task :mongo => :environment do
+    db = $mongo.db "ruby_gems"
+    collection = db.collection "gems"
+
+    puts "Clearing existing Mongo collection"
+    collection.drop
+
+    count = GemData.count
+    GemData.find_each.each_with_index do |gem,i|
+      print "\r#{progress i+1, count}"
+      attributes = gem.attributes
+
+      attributes["rails_id"] = attributes.delete("id")
+
+      attributes["spec"]["authors_list"] =
+        attributes["spec"]["authors"].split(",").map &:strip
+
+      collection.insert attributes
+    end
+
+    puts
+    puts "Done. Now have #{collection.count} gems in Mongo."
+  end
 end

@@ -1,6 +1,8 @@
 class GemData < ActiveRecord::Base
   serialize :spec, JSON
 
+  # Neo4J queries -----
+
   def self.node_names query, opts
     results = $neo.raw query, opts
     results.map { |r| r['data']['name'] }
