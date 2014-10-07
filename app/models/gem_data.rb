@@ -1,5 +1,6 @@
 class GemData < ActiveRecord::Base
   serialize :spec, JSON
+  store_accessor :json_spec
 
   has_many :author_gem_data
   has_many :authors, through: :author_gem_data

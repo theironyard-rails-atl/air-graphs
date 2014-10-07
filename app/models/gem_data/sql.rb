@@ -10,16 +10,26 @@ class GemData
       Author.find_by_name(name).gem_data
     end
 
+    def by_platform name
+      GemData.where "json_spec->>'platform' = ?", name
+    end
+
     def with_dependency gem
-      # NOTE: please don't do this
-      GemData.where 'spec LIKE ?', %{%"name":"#{gem}"%}
+      # This still isn't ideal, but is closer
+      #GemData.where "json_spec#>>'{dependencies,runtime}' LIKE ?", "%#{gem}%"
+
+      # This works if we pre-process the data slightly (though is
+      #   vulnerable to SQL injection if we're not careful)
+      GemData.where "json_spec#>>'{reformatted_dependencies,#{gem}}' = runtime"
     end
 
     def most_downloaded cutoff: 10_000, limit: 20
-      GemData.find_each.
-        select  { |g| g.spec['downloads'] > cutoff }.
-        sort_by { |g| - g.spec['downloads'] }.
-        first limit
+      # NOTE:
+      #   -> returns a JSON object (which isn't comparable to an int)
+      #   ->> returns a string (which can be cast)
+      GemData.where("(json_spec->>'downloads')::int > ?", cutoff).
+        order("(json_spec->>'downloads')::int").
+        limit(limit)
     end
   end
 end
